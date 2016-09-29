@@ -1,6 +1,8 @@
 package com.udacity.gradle.builditbigger;
 
+import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
@@ -8,8 +10,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.example.TellAJoke;
+import com.example.baguzzzaji.myapplication.backend.myApi.MyApi;
 import com.example.showthejoke.ShowTheJoke;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
+import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
+
+import java.io.IOException;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -44,12 +52,46 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void tellJoke(View view) {
-        Intent intent = new Intent(this, ShowTheJoke.class);
-        String joke = new TellAJoke().joke();
-        intent.putExtra(ShowTheJoke.JOKE_KEY, joke);
-        Toast.makeText(this, joke, Toast.LENGTH_SHORT).show();
-        startActivity(intent);
+        new EndpointsAsyncTask().execute(this);
     }
 
+    class EndpointsAsyncTask extends AsyncTask<Context, Void, String> {
+        private MyApi myApi = null;
+        private Context context;
 
+
+        @Override
+        protected String doInBackground(Context... params) {
+            if (myApi == null) {
+                MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("http://192.168.87.2:8080/_ah/api/")
+                        .setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
+                            @Override
+                            public void initialize(AbstractGoogleClientRequest<?> request) throws IOException {
+                                request.setDisableGZipContent(true);
+                            }
+                        });
+                myApi = builder.build();
+            }
+
+            context = params[0];
+
+            try {
+                return myApi.getJoke().execute().getJoke();
+            } catch (IOException e) {
+                return e.getMessage();
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            Toast.makeText(context, s, Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(context, ShowTheJoke.class);
+            intent.putExtra(ShowTheJoke.JOKE_KEY, s);
+
+            startActivity(intent);
+        }
+    }
 }
