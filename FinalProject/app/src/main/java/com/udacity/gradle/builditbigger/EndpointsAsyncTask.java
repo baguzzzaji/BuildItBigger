@@ -15,11 +15,11 @@ import java.io.IOException;
  * Created by baguzzzaji on 30/09/2016.
  */
 
-class EndpointsAsyncTask extends AsyncTask<Void, Void, String> {
+public class EndpointsAsyncTask extends AsyncTask<Void, Void, String> {
     private MyApi myApi = null;
     private Context context;
 
-    interface OnCallback {
+    public interface OnCallback {
         void onFinished(String result);
     }
 
